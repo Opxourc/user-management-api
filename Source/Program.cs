@@ -8,6 +8,28 @@ builder.Services.AddSingleton<UserStore>();
 
 var app = builder.Build();
 
+// Error handling middleware
+app.Use(async (context, next) =>
+{
+    // This is catch any exceptions that wasn't handled before
+    try
+    {
+        await next(context);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(
+            ex,
+            "Unhandled exception occurred while processing {Method} {Path}",
+            context.Request.Method, context.Request.Path
+        );
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new { error = "Internal server error." }); // Write back to client with JSON data
+    }
+});
+
 app.Use(async (context, next) =>
 {
     var requestBody = string.Empty;
