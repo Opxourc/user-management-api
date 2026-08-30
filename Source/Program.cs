@@ -6,6 +6,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<UserStore>();
 
+var validToken = builder.Configuration["Authentication:Token"] ?? "demo-token";
+
 var app = builder.Build();
 
 // Error handling middleware
@@ -28,6 +30,32 @@ app.Use(async (context, next) =>
         context.Response.ContentType = "application/json";
         await context.Response.WriteAsJsonAsync(new { error = "Internal server error." }); // Write back to client with JSON data
     }
+});
+
+app.Use(async (context, next) =>
+{
+    // Check if there's a authorization header and there's a bearer
+    var authHeader = context.Request.Headers["Authorization"].ToString();
+    if (string.IsNullOrWhiteSpace(authHeader) || !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new { error = "Unauthorized." });
+        return;
+    }
+
+    // Check if the token matches the valid token
+    var token = authHeader["Bearer ".Length..].Trim();
+    if (!string.Equals(token, validToken, StringComparison.Ordinal))
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new { error = "Unauthorized." });
+        return;
+    }
+
+    context.Items["AuthenticatedUser"] = "valid-user";
+    await next.Invoke(context);
 });
 
 app.Use(async (context, next) =>
