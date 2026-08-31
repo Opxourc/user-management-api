@@ -24,6 +24,8 @@ public sealed class UserStore
     {
         ValidateRequest(request.FirstName, request.LastName, request.Email);
 
+        // Get the current time for when this user was created
+        // Update also gets the same time since it needs a starting DateTime value
         var now = DateTime.UtcNow;
         var user = new User
         {
@@ -46,12 +48,14 @@ public sealed class UserStore
             return null;
         }
 
+        // Validate the firtname, lastname, and email before updating
         var firstName = string.IsNullOrWhiteSpace(request.FirstName) ? existing.FirstName : request.FirstName.Trim();
         var lastName = string.IsNullOrWhiteSpace(request.LastName) ? existing.LastName : request.LastName.Trim();
         var email = string.IsNullOrWhiteSpace(request.Email) ? existing.Email : request.Email.Trim();
 
         ValidateRequest(firstName, lastName, email);
 
+        // Create a new user instead of using the same user object
         var updated = new User
         {
             Id = existing.Id,
@@ -73,6 +77,7 @@ public sealed class UserStore
 
     private static void ValidateRequest(string firstName, string lastName, string email)
     {
+        // Exceptions are handled by middleware
         if (string.IsNullOrWhiteSpace(firstName))
         {
             throw new ArgumentException("First name is required.", nameof(firstName));

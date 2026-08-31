@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<UserStore>();
 
-var validToken = builder.Configuration["Authentication:Token"] ?? "demo-token";
+var validToken = builder.Configuration["Authentication:Token"] ?? "demo-token"; // Test token, clients have to include this token
 
 var app = builder.Build();
 
@@ -32,6 +32,7 @@ app.Use(async (context, next) =>
     }
 });
 
+// Authorization and Authentication middleware
 app.Use(async (context, next) =>
 {
     // Check if there's a authorization header and there's a bearer
@@ -58,6 +59,7 @@ app.Use(async (context, next) =>
     await next.Invoke(context);
 });
 
+// Logging middleware
 app.Use(async (context, next) =>
 {
     var requestBody = string.Empty;
@@ -126,15 +128,18 @@ app.Use(async (context, next) =>
     }
 });
 
+// Fetching all users stored
 app.MapGet("/users", (UserStore store) =>
     Results.Ok(store.GetAll()));
 
+// Fetching a specific user
 app.MapGet("/users/{id:int}", (int id, UserStore store) =>
 {
     var user = store.GetById(id);
     return user is null ? Results.NotFound() : Results.Ok(user);
 });
 
+// Add a new user
 app.MapPost("/users", (CreateUserRequest request, UserStore store) =>
 {
     try
@@ -148,6 +153,7 @@ app.MapPost("/users", (CreateUserRequest request, UserStore store) =>
     }
 });
 
+// Update an existing user
 app.MapPut("/users/{id:int}", (int id, UpdateUserRequest request, UserStore store) =>
 {
     try
@@ -161,6 +167,7 @@ app.MapPut("/users/{id:int}", (int id, UpdateUserRequest request, UserStore stor
     }
 });
 
+// Delete an existing user
 app.MapDelete("/users/{id:int}", (int id, UserStore store) =>
 {
     var deleted = store.Delete(id);
